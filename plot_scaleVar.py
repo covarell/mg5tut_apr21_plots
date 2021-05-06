@@ -12,10 +12,15 @@ def plot(histograms):
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
-    for observable, histogram in histograms.items():
-        plt.gcf().clf()
-        histogram.plot()
-        plt.gcf().savefig(f"{outdir}/{observable}.pdf")
+    plt.gcf().clf()
+    histograms['ttbar_mass_def'].plot()
+    histograms['ttbar_mass_1'].plot()
+    histograms['ttbar_mass_2'].plot() 
+    histograms['ttbar_mass_3'].plot() 
+    histograms['ttbar_mass_4'].plot() 
+    histograms['ttbar_mass_5'].plot() 
+    histograms['ttbar_mass_6'].plot() 
+    plt.gcf().savefig(f"{outdir}/ttbar_mass_variations.pdf")
 
 def setup_histograms():
     '''Histogram initialization. Add new histos here.'''
@@ -23,7 +28,13 @@ def setup_histograms():
     # Bin edges for each observable
     # TODO: Add your new observables and binnings here
     bins ={
-        'ttbar_mass' : np.linspace(250,1200,50),
+        'ttbar_mass_def' : np.linspace(250,1200,50),
+        'ttbar_mass_1' : np.linspace(250,1200,50),
+        'ttbar_mass_2' : np.linspace(250,1200,50),
+        'ttbar_mass_3' : np.linspace(250,1200,50),
+        'ttbar_mass_4' : np.linspace(250,1200,50),
+        'ttbar_mass_5' : np.linspace(250,1200,50),
+        'ttbar_mass_6' : np.linspace(250,1200,50),
     } 
 
     # No need to change this part
@@ -59,7 +70,13 @@ def analyze(lhe_file):
                 combined_p4 = p4
 
         # TODO: Fill more histograms around here
-        histograms['ttbar_mass'].fill(combined_p4.mass, weight=event.weights[0])
+        histograms['ttbar_mass_def'].fill(combined_p4.mass, weight=event.weights[0])
+        histograms['ttbar_mass_1'].fill(combined_p4.mass, weight=event.weights[1])
+        histograms['ttbar_mass_2'].fill(combined_p4.mass, weight=event.weights[2])
+        histograms['ttbar_mass_3'].fill(combined_p4.mass, weight=event.weights[3])
+        histograms['ttbar_mass_4'].fill(combined_p4.mass, weight=event.weights[4])
+        histograms['ttbar_mass_5'].fill(combined_p4.mass, weight=event.weights[5])
+        histograms['ttbar_mass_6'].fill(combined_p4.mass, weight=event.weights[7])
 
     return histograms
 
