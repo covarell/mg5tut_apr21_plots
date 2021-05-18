@@ -44,7 +44,7 @@ def analyze(lhe_file):
     reader = LHEReader(lhe_file)
     histograms = setup_histograms()
     for event in reader:
-        # Find charged leptons
+        # Find tops
         tops = filter(
             lambda x: abs(x.pdgid)==6,
             event.particles
