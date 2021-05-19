@@ -54,7 +54,7 @@ Edit python/Ex3_Showering.py to insert your gridpack location (in externalLHEPro
 scram b -j 3
 source run_cmsDriver.sh
 ```
-Edit run_Ex3_Showering.py to change the number of events to be generated to 5000 (N.B. it must be done both in
+Edit run_Ex3_Showering.py to change the number of events to be generated to 2000 (N.B. it must be done both in
 externalLHEProducer.nEvents and in maxEvents.input!)
 
 ```
