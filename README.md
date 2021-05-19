@@ -35,6 +35,9 @@ NANOGEN ANALYZER
 Go to a totally new directory (outside the one created for POWHEG in CMSSW_11_2_4).
 
 ```
+bash
+export SCRAM_ARCH=slc7_amd64_gcc700
+
 mkdir NanoGEN
 cd NanoGEN
 cp /eos/cms/store/group/phys_generator/POWHEGTutorial2021/NanoGEN/setup_NanoGEN.sh ./
@@ -56,5 +59,5 @@ externalLHEProducer.nEvents and in maxEvents.input!)
 
 ```
 cmsRun run_Ex3_Showering.py
-python createHists.py --in NanoGEN_Ex3_Showering_g0p5.root --out NanoGEN_higgsPlots.root
+python createHists.py --in NanoGEN_Ex3_Showering.root --out NanoGEN_higgsPlots.root
 ```
