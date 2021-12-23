@@ -23,7 +23,7 @@ def setup_histograms():
     # Bin edges for each observable
     # TODO: Add your new observables and binnings here
     bins ={
-        'ttbar_mass' : np.linspace(250,1200,50),
+        'vv_mass' : np.linspace(180,2500,50),
     } 
 
     # No need to change this part
@@ -59,7 +59,7 @@ def analyze(lhe_file):
                 combined_p4 = p4
 
         # TODO: Fill more histograms around here
-        histograms['ttbar_mass'].fill(combined_p4.mass, weight=event.weights[0])
+        histograms['vv_mass'].fill(combined_p4.mass, weight=event.weights[0])
 
     return histograms
 
