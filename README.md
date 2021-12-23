@@ -13,6 +13,7 @@ python3 -m venv ${ENVNAME}
 source ${ENVNAME}/bin/activate
 export PYTHONPATH="${ENVNAME}/lib/python3.8/site-packages/:${PYTHONPATH}"
 
+python -m pip install -U pip 
 python -m pip install -U lhereader matplotlib mplhep 
 
 ```
