@@ -8,14 +8,15 @@ from matplotlib import pyplot as plt
 import json
 from cycler import cycler
 
-def plot(histograms1,histograms2,oppe,valu):
+def plot(histograms1,histograms2,oppe,valu,label):
     '''Plots all histograms. No need to change.'''
     outdir = './plots/'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
+    thelabel = "$m_{" + label + "}$ [GeV]"
 
-    hist_1 = Hist.new.Var(np.linspace(250,3250,60), name="wz_mass", label="$m_{VV}$ [GeV]").Double()
-    hist_2 = Hist.new.Var(np.linspace(250,3250,60), name="wz_mass", label="$m_{VV}$ [GeV]").Double()
+    hist_1 = Hist.new.Var(np.linspace(250,3250,60), name="wz_mass", label=thelabel).Double()
+    hist_2 = Hist.new.Var(np.linspace(250,3250,60), name="wz_mass", label=thelabel).Double()
 
     plt.gcf().clf()
     for observable, histogram in histograms1.items():
@@ -37,7 +38,7 @@ def plot(histograms1,histograms2,oppe,valu):
     #ax.set_ylabel("cross section [fb/50 GeV]") 
     plt.gcf().savefig(f"{outdir}/{observable}.pdf")
 
-def setup_histograms():
+def setup_histograms(label):
     '''Histogram initialization. Add new histos here.'''
     
     # Bin edges for each observable
@@ -46,12 +47,13 @@ def setup_histograms():
         'wz_mass' : np.linspace(250,3250,60),
    #     'jj_mass' : np.linspace(0,5000,50),
     } 
+    thelabel = "$m_{" + label + "}$ [GeV]"
 
     # No need to change this part
     histograms = { 
                     observable : (
                                     Hist.new
-                                    .Var(binning, name=observable, label="$m_{VV}$ [GeV]")
+                                    .Var(binning, name=observable, label=thelabel)
                                     .Double()
                                 )
                     for observable, binning in bins.items()
@@ -59,13 +61,13 @@ def setup_histograms():
 
     return histograms
 
-def analyze(processo,oppe,valu,xs):
+def analyze(processo,oppe,valu,xs,label):
     '''Event loop + histogram filling'''
 
     lhe_file = '/afs/cern.ch/user/c/covarell/work/mg5_amcatnlo/dim8-hh/MG5_aMC_v2_7_3_py3/' +processo+ '/Events/run_' + oppe + '_' + valu + '_nocutshistat/unweighted_events.lhe'     
     os.system("gunzip "+lhe_file+".gz")
     reader = LHEReader(lhe_file)
-    histograms = setup_histograms()
+    histograms = setup_histograms(label)
   
     for event in reader:
         # Find tops
@@ -123,12 +125,13 @@ def main():
     valu2 = sys.argv[4]
     xs = sys.argv[5]
     xs2 = sys.argv[6]
+    label = sys.argv[7]
 
     #histograms = analyze('/afs/cern.ch/work/c/covarell/mg5_amcatnlo/test-dim8-zzh/MG5_aMC_v2_7_3_py3/vbf-hh-mhhcut/Events/run_05/unweighted_events.lhe')
     #histograms = analyze('/afs/cern.ch/user/c/covarell/work/mg5_amcatnlo/dim8-hh/MG5_aMC_v2_7_3_py3/vbf-wpmz-4f/Events/run_FM4_20_cutshistat/unweighted_events.lhe')
-    histograms1 = analyze(processo,oppe,valu,xs)
-    histograms2 = analyze(processo,oppe,valu2,xs2)
-    plot(histograms1,histograms2,oppe,valu2)
+    histograms1 = analyze(processo,oppe,valu,xs,label)
+    histograms2 = analyze(processo,oppe,valu2,xs2,label)
+    plot(histograms1,histograms2,oppe,valu2,label)
 
 if __name__=="__main__":
     main()
