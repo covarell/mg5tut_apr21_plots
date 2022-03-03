@@ -45,6 +45,7 @@ def analyze(processo,oppe,valu):
     '''Event loop + histogram filling'''
 
     lhe_file = '/afs/cern.ch/user/c/covarell/work/mg5_amcatnlo/dim8-hh/MG5_aMC_v2_7_3_py3/' +processo+ '/Events/run_' + oppe + '_' + valu + '_cutshistat/unweighted_events.lhe'     
+    os.system("gunzip "+lhe_file+".gz")
     reader = LHEReader(lhe_file)
     histograms = setup_histograms()
     # --- dictionary for results
@@ -101,6 +102,7 @@ def analyze(processo,oppe,valu):
         histograms['wz_mass'].fill(combined_p4.mass, weight=1.)
         histograms['jj_mass'].fill(combined_p42.mass, weight=1.)
 
+    os.system("gzip "+lhe_file)
     return histograms
 
 def main():

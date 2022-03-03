@@ -15,8 +15,8 @@ def plot(histograms1,histograms2,oppe,valu,label):
         os.makedirs(outdir)
     thelabel = "$m_{" + label + "}$ [GeV]"
 
-    hist_1 = Hist.new.Var(np.linspace(250,3250,60), name="wz_mass", label=thelabel).Double()
-    hist_2 = Hist.new.Var(np.linspace(250,3250,60), name="wz_mass", label=thelabel).Double()
+    hist_1 = Hist.new.Var(np.linspace(550,3550,30), name="wz_mass", label=thelabel).Double()
+    hist_2 = Hist.new.Var(np.linspace(550,3550,30), name="wz_mass", label=thelabel).Double()
 
     plt.gcf().clf()
     for observable, histogram in histograms1.items():
@@ -44,7 +44,7 @@ def setup_histograms(label):
     # Bin edges for each observable
     # TODO: Add your new observables and binnings here
     bins ={
-        'wz_mass' : np.linspace(250,3250,60),
+        'wz_mass' : np.linspace(550,3550,30),
    #     'jj_mass' : np.linspace(0,5000,50),
     } 
     thelabel = "$m_{" + label + "}$ [GeV]"
