@@ -1,3 +1,6 @@
+# run with 
+# python3 plot_only.py processo operatore valore_operatore_1(SM) valore_operatore_2 xsec1_inPb xsec2_inPb label 
+
 import os
 
 import sys
@@ -7,78 +10,151 @@ from lhereader import LHEReader
 from matplotlib import pyplot as plt
 import json
 from cycler import cycler
+import gzip
+import shutil
 
-def plot(histograms1,histograms2,oppe,valu,label):
+plt.rcParams.update({'font.size': 16}) # size of labels and axis title
+
+
+def plot(data1,data2,oppe,valu2,xs,xs2,label):
+#def plot(data1, data2,oppe,valu,label):
     '''Plots all histograms. No need to change.'''
-    outdir = './plots/'
+
+    outdir = './plots_alessandra_script/'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    thelabel = "$m_{" + label + "}$ [GeV]"
 
-    hist_1 = Hist.new.Var(np.linspace(550,3550,30), name="wz_mass", label=thelabel).Double()
-    hist_2 = Hist.new.Var(np.linspace(550,3550,30), name="wz_mass", label=thelabel).Double()
+    hist_name = label + '_mass'
+    xaxis_name = '$m_{' + label + '}$ [GeV]'
 
-    plt.gcf().clf()
-    for observable, histogram in histograms1.items():
-        hist_2 = histogram
-    for observable, histogram in histograms2.items():
-        hist_1 = histogram
-        
-    fig = plt.figure(figsize=(8, 6))
-    thelabel = "$f_{" + oppe[1:3] + "}/\Lambda^4 =" + valu + "$ TeV$^{-4}$"
-    main_ax_artists, subplot_ax_artists = hist_1.plot_ratio(
-        hist_2,
-        rp_ylabel="Ratio",
-        rp_num_label=thelabel,
-        rp_denom_label="SM",
-        rp_uncert_draw_type="line",  # line or bar
-        rp_uncertainty_type="poisson",
-        rp_ylim = [-0.5,5.5]
-    )
-    #ax.set_ylabel("cross section [fb/50 GeV]") 
-    plt.gcf().savefig(f"{outdir}/{observable}.pdf")
+    xminhist = 550
+    xmaxhist = 3550 
+    nbins = (float(xmaxhist)-float(xminhist))/100. # define bins to have 100 GeV in each bin
+    print('nbins: ',nbins)
 
-def setup_histograms(label):
-    '''Histogram initialization. Add new histos here.'''
-    
-    # Bin edges for each observable
-    # TODO: Add your new observables and binnings here
-    bins ={
-        'wz_mass' : np.linspace(550,3550,30),
-   #     'jj_mass' : np.linspace(0,5000,50),
-    } 
-    thelabel = "$m_{" + label + "}$ [GeV]"
+    fig = plt.figure(figsize=(8.,6.))
 
-    # No need to change this part
-    histograms = { 
-                    observable : (
-                                    Hist.new
-                                    .Var(binning, name=observable, label=thelabel)
-                                    .Double()
-                                )
-                    for observable, binning in bins.items()
-    }
+    print('length data SM: ',len(data1))
+    print('length data BSM: ',len(data2))
 
-    return histograms
+    weight1 = np.full_like(data1, (float(xs)*1000.)/float(len(data1))) # weight: xsec [pb] transformed in fb divided per number of events
+    weight2 = np.full_like(data2, (float(xs2)*1000.)/float(len(data2)))
 
-def analyze(processo,oppe,valu,xs,label):
+    print('weight1 array: ', weight1)
+    print('weight2 array: ', weight2)
+    print('length weight1: ', len(weight1))
+    print('length weight2 : ', len(weight2))
+    print('sum of weight1: ', sum(weight1))
+    print('sum of weight2: ', sum(weight2))
+    print('xsec SM: ', xs)
+    print('xsec BSM: ', xs2)
+   
+
+    # Plot two distributions on the same plot
+    ax1 = fig.add_subplot(4, 1, (1,3)) # nrows, ncols, index (fist, last)
+    ax1.set_ylabel("cross section [fb/100 GeV]")
+    ax1.set_xticklabels([]) #remove labels of x axis
+    ax1.set_xlim(xminhist,xmaxhist) #fix limits of xaxis
+    if (oppe == 'FM3' and label == 'HH'):
+        ax1.set_ylim(0.000005,5) #fix limits of xaxis
+    ax1.set_yscale('log') # log scale of y axis
+
+    val_of_bins_data2, edges_of_bins_data2, patches_data2 = plt.hist(data2, int(nbins), range=(xminhist, xmaxhist), density=False, weights=weight2, histtype='step', label="$f_{" + oppe[1:3] + "}/\Lambda^4 =" + valu2 + "$ TeV$^{-4}$")
+    val_of_bins_data1, edges_of_bins_data1, patches_data1 = plt.hist(data1, int(nbins), range=(xminhist, xmaxhist), density=False, weights=weight1, histtype='step', label="SM")
+
+    print('bin content hist SM: ', val_of_bins_data1)
+    print('bin content hist BSM: ', val_of_bins_data2)
+    print('edges of bin hist SM: ', edges_of_bins_data1)
+    print('edges of bin hist BSM: ',edges_of_bins_data2)
+    len1 = len(edges_of_bins_data1)-1
+    len2 = len(edges_of_bins_data2)-1
+    print(len1, len2)
+    print('area hist SM: ', sum(val_of_bins_data1[0:len1]))
+    print('area hist BSM: ', sum(val_of_bins_data2[0:len2]))
+
+    ax1.legend()
+
+    # Set ratio where val_of_bins_data2 is not zero
+    ratio = np.divide(val_of_bins_data2,
+                      val_of_bins_data1,
+                      where=(val_of_bins_data1 !=0))
+
+    print("ratio:", ratio)
+
+    # Compute error on ratio (null if cannot be computed)
+    # error propagation, bin per bin
+    # error on bins: sum of squared weights
+    # val_of_bins_data1 = num of evt in 1 bin * weight (since all weight are equal)
+    # the squared error (sigma^2) on the bin of weighted hist is sum(weight^2)
+    # since all weights are equal, sigma^2 = sum(weight^2) = num of evt in 1 bin * weight^2 
+    # simplifying a bit, it remains like this
+    error = ratio * np.sqrt(np.divide(weight2[0], val_of_bins_data2, where=(val_of_bins_data2 != 0)) +
+                            np.divide(weight1[0], val_of_bins_data1, where=(val_of_bins_data1 != 0))
+                            )
+
+    print("error:", error)
+
+    for i in range(len(ratio)):
+        # replace hardik with shardul
+        if (abs(ratio[i]) < 0.1):
+            ratio[i] = 999.
+        if (error[i] > 0.5*ratio[i]):
+            error[i] = 1.			
+            
+    # Add the ratio on the existing plot
+    # Add an histogram of errors
+    ax3 = fig.add_subplot(4, 1, 4)
+    ax3.set_ylabel('BSM/SM') # y axis of the ratio plot name
+    ax3.set_xlabel(xaxis_name) # x axis name
+    ax3.set_xlim(xminhist,xmaxhist) #fix limits of xaxis
+
+    bincenter = 0.5 * (edges_of_bins_data1[1:] + edges_of_bins_data1[:-1])
+    ax3.errorbar(bincenter, ratio, yerr=error, fmt='o', color='k') # ratio with error
+    ax3.set_ylim(-0.5,5.)
+    ax3.set_yticks([0, 1, 2, 3, 4])
+
+    # horizontal line
+    ax3.hlines(y=1., xmin=xminhist, xmax=xmaxhist, linewidth=1, colors='k', linestyles='dashed')
+ 
+
+    plt.subplots_adjust(hspace=0)
+    plt.savefig(f"{outdir}/{hist_name}.pdf")
+
+
+
+def analyze(processo,oppe,valu):
     '''Event loop + histogram filling'''
 
-    lhe_file = '/afs/cern.ch/user/c/covarell/work/mg5_amcatnlo/dim8-hh/MG5_aMC_v2_7_3_py3/' +processo+ '/Events/run_' + oppe + '_' + valu + '_nocutshistat/unweighted_events.lhe'     
-    os.system("gunzip "+lhe_file+".gz")
-    reader = LHEReader(lhe_file)
-    histograms = setup_histograms(label)
-  
+#    lhe_file = os.path.join('/afs', 'cern.ch', 'user', 'a', 'acappati', 'work', 'ZZH', '220414_process1_nocuts', 'MG5_aMC_v2_7_3_py3', processo, 'Events', 'run_' + oppe + '_' + valu + '_cuts', 'unweighted_events.lhe') # process 1
+    lhe_file = os.path.join('/afs', 'cern.ch', 'work', 'c', 'covarell', 'mg5_amcatnlo', 'dim8-hh', 'MG5_aMC_v2_7_3_py3', processo, 'Events', 'run_' + oppe + '_' + valu + '_nocutshistat', 'unweighted_events.lhe') # process 3
+    lhe_file_gz = lhe_file + '.gz'
+
+    # check if gzipped file exists
+    if os.path.isfile(lhe_file_gz):
+        # open the gzip (read+byte mode) as file_in context
+        # open the recipient unzipped file (write+byte mode) as file_out context
+        with gzip.open(lhe_file_gz, 'rb') as file_in, open(lhe_file, 'wb') as file_out:
+            # copy content of zipped file to recipient
+            shutil.copyfileobj(file_in, file_out)
+
+    # check if unzipped file exists
+    print('opening file ', lhe_file)
+    if os.path.isfile(lhe_file):
+        reader = LHEReader(lhe_file)
+    else:
+        # throw error
+        raise FileNotFoundError(f'{lhe_file} not found!')
+    
+    # array delle masse
+    mass_array = []
+ 
+    # loop over events 
     for event in reader:
-        # Find tops
+        # Find bosons
         tops = filter(
             lambda x: abs(x.pdgid) in (23,24,25),
             event.particles
         )
-    #    jets = filter(
-    #        lambda x1: abs(x1.pdgid) in (1,2,3,4,5) and x1.status > 0,
-    #        event.particles
-    #    )
 
         # Sum over top four-momenta in the event
         combined_p4 = None
@@ -88,29 +164,10 @@ def analyze(processo,oppe,valu,xs,label):
             else:
                 combined_p4 = p4
 
-    #    for i_limit in limit_list.keys():
-     #       if combined_p4.mass < i_limit: 
-      #          limit_list[i_limit] += 1
-     
-      #  combined_p42 = None
-      #  for p42 in map(lambda x1: x1.p4(), jets):
-      #      if combined_p42:
-      #          combined_p42 += p42
-      #      else:
-       #         combined_p42 = p42
+        mass_array.append(combined_p4.mass) # fill mass array
 
-        # --- save file with fit results
-        #outfile = './fractions_' + processo + '_' + oppe + '_' + valu + '.json'
-        #with open(outfile,'w') as f:
-        #        json.dump(limit_list,f)
-        myweight = float(xs)/40.;
+    return mass_array
 
-        # TODO: Fill more histograms around here
-        histograms['wz_mass'].fill(combined_p4.mass, weight=myweight)
-     #   histograms['jj_mass'].fill(combined_p42.mass, weight=1.)
-
-    os.system("gzip "+lhe_file)
-    return histograms
 
 def main():
 
@@ -129,9 +186,9 @@ def main():
 
     #histograms = analyze('/afs/cern.ch/work/c/covarell/mg5_amcatnlo/test-dim8-zzh/MG5_aMC_v2_7_3_py3/vbf-hh-mhhcut/Events/run_05/unweighted_events.lhe')
     #histograms = analyze('/afs/cern.ch/user/c/covarell/work/mg5_amcatnlo/dim8-hh/MG5_aMC_v2_7_3_py3/vbf-wpmz-4f/Events/run_FM4_20_cutshistat/unweighted_events.lhe')
-    histograms1 = analyze(processo,oppe,valu,xs,label)
-    histograms2 = analyze(processo,oppe,valu2,xs2,label)
-    plot(histograms1,histograms2,oppe,valu2,label)
+    data1 = analyze(processo,oppe,valu)
+    data2 = analyze(processo,oppe,valu2)
+    plot(data1,data2,oppe,valu2,xs,xs2,label)
 
 if __name__=="__main__":
     main()
