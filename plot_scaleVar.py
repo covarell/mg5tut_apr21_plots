@@ -1,59 +1,16 @@
 import os
 
 import numpy as np
-from hist import Hist
 from lhereader import LHEReader
 from matplotlib import pyplot as plt
 
-
-def plot(histograms):
-    '''Plots all histograms. No need to change.'''
-    outdir = './plots/'
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-
-    plt.gcf().clf()
-    histograms['ttbar_mass_def'].plot()
-    histograms['ttbar_mass_1'].plot()
-    histograms['ttbar_mass_2'].plot() 
-    histograms['ttbar_mass_3'].plot() 
-    histograms['ttbar_mass_4'].plot() 
-    histograms['ttbar_mass_5'].plot() 
-    histograms['ttbar_mass_6'].plot() 
-    plt.gcf().savefig(f"{outdir}/ttbar_mass_variations.pdf")
-
-def setup_histograms():
-    '''Histogram initialization. Add new histos here.'''
-    
-    # Bin edges for each observable
-    # TODO: Add your new observables and binnings here
-    bins ={
-        'ttbar_mass_def' : np.linspace(250,1200,50),
-        'ttbar_mass_1' : np.linspace(250,1200,50),
-        'ttbar_mass_2' : np.linspace(250,1200,50),
-        'ttbar_mass_3' : np.linspace(250,1200,50),
-        'ttbar_mass_4' : np.linspace(250,1200,50),
-        'ttbar_mass_5' : np.linspace(250,1200,50),
-        'ttbar_mass_6' : np.linspace(250,1200,50),
-    } 
-
-    # No need to change this part
-    histograms = { 
-                    observable : (
-                                    Hist.new
-                                    .Var(binning, name=observable, label=observable)
-                                    .Int64()
-                                )
-                    for observable, binning in bins.items()
-    }
-
-    return histograms
-
 def analyze(lhe_file):
     '''Event loop + histogram filling'''
+
+    mass = []
+    weights = []
     
     reader = LHEReader(lhe_file)
-    histograms = setup_histograms()
     for event in reader:
         # Find tops
         tops = filter(
@@ -70,15 +27,26 @@ def analyze(lhe_file):
                 combined_p4 = p4
 
         # TODO: Fill more histograms around here
-        histograms['ttbar_mass_def'].fill(combined_p4.mass, weight=event.weights[0])
-        histograms['ttbar_mass_1'].fill(combined_p4.mass, weight=event.weights[1])
-        histograms['ttbar_mass_2'].fill(combined_p4.mass, weight=event.weights[2])
-        histograms['ttbar_mass_3'].fill(combined_p4.mass, weight=event.weights[3])
-        histograms['ttbar_mass_4'].fill(combined_p4.mass, weight=event.weights[4])
-        histograms['ttbar_mass_5'].fill(combined_p4.mass, weight=event.weights[5])
-        histograms['ttbar_mass_6'].fill(combined_p4.mass, weight=event.weights[7])
+        mass.append(combined_p4.mass)
+        temp_weights = []
+        for i in [0,1,2,3,4,5,6,7,8]:
+            temp_weights.append(event.weights[i])
+        weights.append(temp_weights)
 
-    return histograms
+    return mass, weights
 
-histograms = analyze('lhe/cmsgrid_final.lhe')
-plot(histograms)
+mass,weights = analyze('lhe/cmsgrid_final.lhe')
+transposed_weights = [list(row) for row in zip(*weights)]
+'''Plots all histograms. No need to change.'''
+outdir = './plots/'
+if not os.path.exists(outdir):
+  os.makedirs(outdir)
+
+color_names = ['palegreen','lightgreen','darkolivegreen','olive','seagreen','','chartreuse','lawngreen']
+plt.gcf().clf()
+fig_all, ax_all = plt.subplots(nrows=1, ncols=1, figsize=(8,5))
+for i in [0,1,2,3,4,6,7]:    # remove cases with muR*muF = 4 or 1/4
+    ax_all.set_xlim(200.,1500.)
+    ax_all.hist(mass,weights=transposed_weights[i],bins=50,histtype='step',fill=None,ec=color_names[i])
+plt.gcf().savefig(f"{outdir}/ttbar_mass_scaleVar.pdf")
+

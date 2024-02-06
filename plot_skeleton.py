@@ -1,48 +1,16 @@
 import os
 
 import numpy as np
-from hist import Hist
 from lhereader import LHEReader
 from matplotlib import pyplot as plt
 
-
-def plot(histograms):
-    '''Plots all histograms. No need to change.'''
-    outdir = './plots/'
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-
-    for observable, histogram in histograms.items():
-        plt.gcf().clf()
-        histogram.plot()
-        plt.gcf().savefig(f"{outdir}/{observable}.pdf")
-
-def setup_histograms():
-    '''Histogram initialization. Add new histos here.'''
-    
-    # Bin edges for each observable
-    # TODO: Add your new observables and binnings here
-    bins ={
-        'ttbar_mass' : np.linspace(250,1200,50),
-    } 
-
-    # No need to change this part
-    histograms = { 
-                    observable : (
-                                    Hist.new
-                                    .Var(binning, name=observable, label=observable)
-                                    .Int64()
-                                )
-                    for observable, binning in bins.items()
-    }
-
-    return histograms
-
 def analyze(lhe_file):
     '''Event loop + histogram filling'''
+
+    mass = []
+    weights = []
     
     reader = LHEReader(lhe_file)
-    histograms = setup_histograms()
     for event in reader:
         # Find tops
         tops = filter(
@@ -59,9 +27,20 @@ def analyze(lhe_file):
                 combined_p4 = p4
 
         # TODO: Fill more histograms around here
-        histograms['ttbar_mass'].fill(combined_p4.mass, weight=event.weights[0])
+        mass.append(combined_p4.mass)
+        weights.append(event.weights[0])
 
-    return histograms
+    return mass, weights
 
-histograms = analyze('lhe/cmsgrid_final.lhe')
-plot(histograms)
+mass,weights = analyze('lhe/cmsgrid_final.lhe')
+'''Plots all histograms. No need to change.'''
+outdir = './plots/'
+if not os.path.exists(outdir):
+  os.makedirs(outdir)
+
+plt.gcf().clf()
+fig_all, ax_all = plt.subplots(nrows=1, ncols=1, figsize=(8,5))
+ax_all.set_xlim(200.,1500.)
+ax_all.hist(mass,weights=weights,bins=50,histtype='step',fill=None)
+plt.gcf().savefig(f"{outdir}/ttbar_mass.pdf")
+
